@@ -161,6 +161,64 @@
         box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
     }
 
+    .btn-check-id {
+        background: rgba(168, 85, 247, 0.15);
+        border: 1px solid rgba(168, 85, 247, 0.4);
+        color: var(--primary-light);
+        padding: 0 20px;
+        border-radius: var(--radius-md);
+        font-family: inherit;
+        font-size: 13.5px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-check-id:hover {
+        background: var(--primary-gradient);
+        color: #000;
+        border-color: transparent;
+        box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+    }
+
+    .check-result-box {
+        padding: 16px 20px;
+        border-radius: var(--radius-md);
+        transition: all 0.3s ease;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .check-result-box.loading {
+        background: rgba(168, 85, 247, 0.08);
+        border: 1px solid rgba(168, 85, 247, 0.3);
+        color: var(--primary-light);
+        font-size: 13.5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .check-result-box.success {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(16, 185, 129, 0.05) 100%);
+        border: 1px solid rgba(34, 197, 94, 0.4);
+        box-shadow: 0 0 25px rgba(34, 197, 94, 0.15);
+    }
+
+    .check-result-box.error {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.05) 100%);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        box-shadow: 0 0 25px rgba(239, 68, 68, 0.15);
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     /* Products Grid (Step 2) */
     .products-grid {
         display: grid;
@@ -316,6 +374,19 @@
 
         <!-- Right Form -->
         <div class="order-main">
+            @if($errors->any())
+                <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 20px; color: #fca5a5; font-size: 14px;">
+                    <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; margin-bottom: 6px;">
+                        <i class="fa-solid fa-circle-exclamation"></i> Data Tidak Valid
+                    </div>
+                    <ul style="margin: 0; padding-left: 20px;">
+                        @foreach($errors->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <form action="{{ route('order.store') }}" method="POST" id="orderForm">
                 @csrf
                 <input type="hidden" name="product_id" id="selectedProductId" required>
@@ -330,7 +401,12 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label" for="customerNumber">{{ $category->user_id_label ?? 'User ID' }} <span style="color: var(--primary);">*</span></label>
-                            <input type="text" name="customer_number" id="customerNumber" class="form-input" placeholder="Contoh: 12345678" required value="{{ old('customer_number') }}">
+                            <div style="position: relative; display: flex; gap: 10px;">
+                                <input type="text" name="customer_number" id="customerNumber" class="form-input" placeholder="Contoh: 12345678" required value="{{ old('customer_number') }}" style="flex: 1;">
+                                <button type="button" id="btnCheckAccount" class="btn-check-id" onclick="checkAccount()">
+                                    <i class="fa-solid fa-magnifying-glass"></i> Cek Akun
+                                </button>
+                            </div>
                         </div>
 
                         @if($category->has_zone_id)
@@ -339,6 +415,13 @@
                             <input type="text" name="zone_id" id="zoneId" class="form-input" placeholder="Contoh: 1234" required value="{{ old('zone_id') }}">
                         </div>
                         @endif
+                    </div>
+
+                    <!-- Live Validation Feedback Box -->
+                    <div id="accountCheckResult" style="display: none; margin-top: 18px;">
+                        <div class="check-result-box" id="checkResultInner">
+                            <!-- Injected by JS -->
+                        </div>
                     </div>
                 </div>
 
@@ -379,8 +462,11 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label" for="customerPhone">Nomor WhatsApp <span style="color: var(--primary);">*</span></label>
-                            <input type="tel" name="customer_phone" id="customerPhone" class="form-input" placeholder="08xxxxxxxxxx" required value="{{ old('customer_phone') }}">
-                            <small style="color: var(--text-dim); font-size: 12px;">Bukti transaksi dan invoice otomatis dikirim ke nomor ini.</small>
+                            <input type="tel" name="customer_phone" id="customerPhone" class="form-input" placeholder="08xxxxxxxxxx" required value="{{ old('customer_phone') }}" onkeyup="detectPhoneOperator(this.value)">
+                            <div id="operatorBadge" style="display: none; margin-top: 6px; font-size: 12px; color: var(--primary-light); font-weight: 700;">
+                                <i class="fa-solid fa-tower-broadcast"></i> <span id="operatorText"></span>
+                            </div>
+                            <small style="color: var(--text-dim); font-size: 12px; margin-top: 4px;">Bukti transaksi dan invoice otomatis dikirim ke nomor ini.</small>
                         </div>
 
                         <div class="form-group">
@@ -392,14 +478,18 @@
 
                 <!-- Step 4: Ringkasan & Submit -->
                 <div class="order-step-card checkout-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
                         <div>
-                            <span style="font-size: 13px; color: var(--text-muted);">Paket Dipilih:</span>
-                            <h4 id="summaryProductName" style="font-family: var(--font-heading); font-size: 17px; color: #fff; font-weight: 800;">Belum memilih paket</h4>
+                            <span style="font-size: 13px; color: var(--text-muted);">Tujuan / Akun:</span>
+                            <h4 id="summaryAccountName" style="font-family: var(--font-heading); font-size: 15px; color: #e2e8f0; font-weight: 700;">Belum memasukkan ID</h4>
+                            <div style="margin-top: 8px;">
+                                <span style="font-size: 13px; color: var(--text-muted);">Paket Dipilih:</span>
+                                <h4 id="summaryProductName" style="font-family: var(--font-heading); font-size: 17px; color: #fff; font-weight: 800;">Belum memilih paket</h4>
+                            </div>
                         </div>
                         <div style="text-align: right;">
                             <span style="font-size: 13px; color: var(--text-muted);">Total Pembayaran:</span>
-                            <h3 id="summaryProductPrice" style="font-family: var(--font-heading); font-size: 24px; color: var(--primary-light); font-weight: 900;">Rp 0</h3>
+                            <h3 id="summaryProductPrice" style="font-family: var(--font-heading); font-size: 26px; color: var(--primary-light); font-weight: 900;">Rp 0</h3>
                         </div>
                     </div>
 
@@ -416,6 +506,23 @@
 @section('scripts')
 <script>
     let currentSelectedId = null;
+    let isAccountVerified = false;
+    const categorySlug = "{{ $category->slug }}";
+    let checkTimeout = null;
+
+    function updateSubmitState() {
+        const btn = document.getElementById('btnSubmit');
+        if (currentSelectedId && isAccountVerified) {
+            btn.removeAttribute('disabled');
+            btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Beli Sekarang &bull; Bayar';
+        } else if (!isAccountVerified) {
+            btn.setAttribute('disabled', 'true');
+            btn.innerHTML = '<i class="fa-solid fa-lock"></i> Cek Akun Terlebih Dahulu';
+        } else {
+            btn.setAttribute('disabled', 'true');
+            btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Pilih Nominal Paket';
+        }
+    }
 
     function selectProduct(id, name, price) {
         if (currentSelectedId) {
@@ -431,7 +538,153 @@
         document.getElementById('summaryProductName').innerText = name;
         document.getElementById('summaryProductPrice').innerText = 'Rp ' + Number(price).toLocaleString('id-ID');
         
-        document.getElementById('btnSubmit').removeAttribute('disabled');
+        updateSubmitState();
+    }
+
+    // Auto-check on input with debounce
+    const custInput = document.getElementById('customerNumber');
+    const zoneInput = document.getElementById('zoneId');
+    const orderForm = document.getElementById('orderForm');
+
+    if (custInput) {
+        custInput.addEventListener('input', () => {
+            isAccountVerified = false;
+            updateSubmitState();
+            clearTimeout(checkTimeout);
+            checkTimeout = setTimeout(checkAccount, 800);
+        });
+    }
+
+    if (zoneInput) {
+        zoneInput.addEventListener('input', () => {
+            isAccountVerified = false;
+            updateSubmitState();
+            clearTimeout(checkTimeout);
+            checkTimeout = setTimeout(checkAccount, 800);
+        });
+    }
+
+    if (orderForm) {
+        orderForm.addEventListener('submit', (e) => {
+            if (!isAccountVerified) {
+                e.preventDefault();
+                alert('Peringatan: ID Akun atau Nomor Tujuan Anda belum terverifikasi di server. Silakan klik tombol "Cek Akun" terlebih dahulu.');
+                return false;
+            }
+        });
+    }
+
+    async function checkAccount() {
+        const custNum = document.getElementById('customerNumber').value.trim();
+        const zone = zoneInput ? zoneInput.value.trim() : null;
+        const resultContainer = document.getElementById('accountCheckResult');
+        const resultInner = document.getElementById('checkResultInner');
+        const btn = document.getElementById('btnCheckAccount');
+
+        if (!custNum || custNum.length < 3) {
+            resultContainer.style.display = 'none';
+            document.getElementById('summaryAccountName').innerText = 'Belum memasukkan ID';
+            isAccountVerified = false;
+            updateSubmitState();
+            return;
+        }
+
+        // Show loading state
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Cek...';
+        btn.disabled = true;
+        resultContainer.style.display = 'block';
+        resultInner.className = 'check-result-box loading';
+        resultInner.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memeriksa data akun / nomor ke server...';
+
+        try {
+            const response = await fetch("{{ route('account.check') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    category_slug: categorySlug,
+                    customer_number: custNum,
+                    zone_id: zone
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                isAccountVerified = true;
+                resultInner.className = 'check-result-box success';
+                resultInner.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <i class="fa-solid fa-circle-check" style="font-size: 22px; color: #4ade80;"></i>
+                        <div>
+                            <div style="font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85; color: #86efac; font-weight: 700;">Akun Terverifikasi Resmi:</div>
+                            <div style="font-size: 16px; font-weight: 900; color: #fff;">${data.account_name}</div>
+                            <div style="font-size: 12px; color: #bbf7d0; margin-top: 2px;">${data.message}</div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('summaryAccountName').innerHTML = `<span style="color: #4ade80; font-weight: 800;"><i class="fa-solid fa-circle-check"></i> ${data.account_name}</span> <span style="font-size: 12px; opacity: 0.7;">(${custNum}${zone ? ' / ' + zone : ''})</span>`;
+            } else {
+                isAccountVerified = false;
+                resultInner.className = 'check-result-box error';
+                resultInner.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <i class="fa-solid fa-circle-xmark" style="font-size: 22px; color: #f87171;"></i>
+                        <div>
+                            <div style="font-size: 14px; font-weight: 800; color: #fca5a5;">${data.message}</div>
+                            <div style="font-size: 12px; color: #fecaca; margin-top: 2px;">Transaksi diblokir sampai data akun ditemukan dan valid.</div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('summaryAccountName').innerHTML = `<span style="color: #f87171;"><i class="fa-solid fa-triangle-exclamation"></i> Akun Belum Valid</span>`;
+            }
+        } catch (e) {
+            isAccountVerified = false;
+            resultInner.className = 'check-result-box error';
+            resultInner.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Gagal menghubungi server validasi.';
+        } finally {
+            btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Cek Akun';
+            btn.disabled = false;
+            updateSubmitState();
+        }
+    }
+
+    // Auto detect operator on WhatsApp input
+    const prefixes = {
+        'Telkomsel': ['0811', '0812', '0813', '0821', '0822', '0823', '0851', '0852', '0853'],
+        'Indosat': ['0814', '0815', '0816', '0855', '0856', '0857', '0858'],
+        'XL Axiata': ['0817', '0818', '0819', '0859', '0877', '0878'],
+        'AXIS': ['0831', '0832', '0833', '0838'],
+        'Tri (3)': ['0895', '0896', '0897', '0898', '0899'],
+        'Smartfren': ['0881', '0882', '0883', '0884', '0885', '0886', '0887', '0888', '0889']
+    };
+
+    function detectPhoneOperator(val) {
+        const clean = val.replace(/\D/g, '');
+        const badge = document.getElementById('operatorBadge');
+        const text = document.getElementById('operatorText');
+
+        if (clean.length >= 4) {
+            const prefix = clean.substring(0, 4);
+            let found = null;
+
+            for (const [op, list] of Object.entries(prefixes)) {
+                if (list.includes(prefix)) {
+                    found = op;
+                    break;
+                }
+            }
+
+            if (found) {
+                badge.style.display = 'block';
+                text.innerText = 'Operator: ' + found;
+                return;
+            }
+        }
+        badge.style.display = 'none';
     }
 </script>
 @endsection

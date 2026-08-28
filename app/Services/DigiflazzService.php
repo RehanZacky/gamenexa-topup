@@ -65,6 +65,32 @@ class DigiflazzService
     }
 
     /**
+     * Inquiry Pascaprabayar (PLN, PDAM, BPJS, Cek Nama)
+     */
+    public function inquiryPasca(string $refId, string $buyerSkuCode, string $customerNo): array
+    {
+        $sign = md5($this->username . $this->key . $refId);
+
+        $payload = [
+            'commands' => 'inq-pasca',
+            'username' => $this->username,
+            'buyer_sku_code' => $buyerSkuCode,
+            'customer_no' => $customerNo,
+            'ref_id' => $refId,
+            'sign' => $sign,
+            'testing' => $this->isTesting,
+        ];
+
+        try {
+            $response = Http::timeout(20)->post("{$this->baseUrl}/transaction", $payload);
+            return $response->json() ?? ['data' => ['rc' => '99', 'status' => 'Gagal', 'message' => 'Invalid Response']];
+        } catch (\Throwable $e) {
+            Log::error("Digiflazz inquiryPasca Error [{$refId}]: " . $e->getMessage());
+            return ['data' => ['rc' => '99', 'status' => 'Gagal', 'message' => $e->getMessage()]];
+        }
+    }
+
+    /**
      * Kirim Order Transaksi Top-Up ke Digiflazz
      *
      * @param string $refId ID unik pesanan topup kita (e.g. TPU-20260815-00001)

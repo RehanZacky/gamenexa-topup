@@ -16,7 +16,7 @@ class SyncDigiflazzProducts extends Command
      *
      * @var string
      */
-    protected $signature = 'digiflazz:sync-products {--category= : Filter by brand / category name} {--margin=2000 : Default profit margin in Rupiah}';
+    protected $signature = 'digiflazz:sync-products {--category= : Filter by brand / category name} {--margin=2000 : Default profit margin in Rupiah} {--wipe : Reset all existing products and sync cleanly}';
 
     /**
      * The console command description.
@@ -32,11 +32,19 @@ class SyncDigiflazzProducts extends Command
     {
         $this->info('Mengambil data produk dari Digiflazz API...');
 
+        if ($this->option('wipe')) {
+            $this->warn('Menghapus data produk lama sebelum sinkronisasi...');
+            \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
+            Product::truncate();
+            \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
+        }
+
         $response = $digiflazz->getPriceList();
         $items = $response['data'] ?? [];
 
-        if (empty($items)) {
-            $this->error('Tidak ada data produk yang diterima dari Digiflazz. Pastikan username dan key di .env sudah benar.');
+        if (empty($items) || isset($items['rc'])) {
+            $msg = $items['message'] ?? 'Tidak ada data produk yang diterima dari Digiflazz.';
+            $this->error("Gagal mengambil produk: {$msg}");
             return 1;
         }
 
@@ -50,21 +58,54 @@ class SyncDigiflazzProducts extends Command
         $syncedCount = 0;
 
         foreach ($items as $item) {
+            if (!is_array($item) || empty($item['buyer_sku_code'])) {
+                continue;
+            }
+
             $brand = $item['brand'] ?? 'Games';
-            $categoryName = $item['category'] ?? 'Games';
+            $categoryName = strtolower($item['category'] ?? 'games');
+            $slug = Str::slug($brand);
 
             if ($filterCategory && stripos($brand, $filterCategory) === false) {
                 continue;
             }
 
-            // Kategori Game
-            $category = Category::firstOrCreate(
-                ['slug' => Str::slug($brand)],
+            // Tentukan type dan label kategori
+            $type = 'games';
+            $userIdLabel = 'User ID';
+            $zoneIdLabel = 'Zone ID';
+            $hasZoneId = in_array($slug, ['mobile-legends', 'genshin-impact']);
+            $instruction = 'Masukkan User ID akun game Anda dengan benar.';
+
+            if (in_array($slug, ['dana', 'ovo', 'go-pay', 'shopee-pay', 'linkaja'])) {
+                $type = 'ewallet';
+                $userIdLabel = 'Nomor HP Akun';
+                $instruction = 'Masukkan nomor HP yang terdaftar di akun ' . $brand . ' Anda.';
+            } elseif ($slug === 'pln') {
+                $type = 'pln';
+                $userIdLabel = 'No. Meter / ID Pelanggan';
+                $instruction = 'Masukkan 11-12 digit Nomor Meteran atau ID Pelanggan PLN Anda.';
+            } elseif (in_array($slug, ['telkomsel', 'xl', 'axis', 'tri', 'indosat', 'smartfren', 'byu'])) {
+                $type = 'pulsa';
+                $userIdLabel = 'Nomor Handphone';
+                $instruction = 'Masukkan nomor handphone ' . $brand . ' tujuan (contoh: 081234567890).';
+            } elseif (in_array($categoryName, ['voucher', 'streaming', 'tv']) || in_array($slug, ['pertamina-gas', 'k-vision-dan-gol'])) {
+                $type = 'voucher';
+                $userIdLabel = 'Nomor HP / ID Pelanggan';
+                $instruction = 'Masukkan nomor HP atau ID pelanggan untuk menerima kode/paket voucher.';
+            }
+
+            // Kategori
+            $category = Category::updateOrCreate(
+                ['slug' => $slug],
                 [
                     'name' => $brand,
-                    'type' => strtolower($categoryName) === 'games' ? 'games' : 'pulsa',
+                    'type' => $type,
                     'publisher' => $brand,
-                    'has_zone_id' => in_array(Str::slug($brand), ['mobile-legends', 'genshin-impact']),
+                    'has_zone_id' => $hasZoneId,
+                    'zone_id_label' => $zoneIdLabel,
+                    'user_id_label' => $userIdLabel,
+                    'instruction' => $instruction,
                     'status' => 'active',
                 ]
             );

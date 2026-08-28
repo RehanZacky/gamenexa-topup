@@ -455,8 +455,10 @@
     <div class="filter-tabs">
         <a href="{{ route('home', ['type' => 'all']) }}" class="tab-btn {{ $type === 'all' ? 'active' : '' }}"><i class="fa-solid fa-border-all"></i> Semua</a>
         <a href="{{ route('home', ['type' => 'games']) }}" class="tab-btn {{ $type === 'games' ? 'active' : '' }}"><i class="fa-solid fa-gamepad"></i> Game Online</a>
-        <a href="{{ route('home', ['type' => 'voucher']) }}" class="tab-btn {{ $type === 'voucher' ? 'active' : '' }}"><i class="fa-solid fa-ticket"></i> Voucher</a>
         <a href="{{ route('home', ['type' => 'pulsa']) }}" class="tab-btn {{ $type === 'pulsa' ? 'active' : '' }}"><i class="fa-solid fa-mobile-screen-button"></i> Pulsa & Data</a>
+        <a href="{{ route('home', ['type' => 'ewallet']) }}" class="tab-btn {{ $type === 'ewallet' ? 'active' : '' }}"><i class="fa-solid fa-wallet"></i> E-Wallet</a>
+        <a href="{{ route('home', ['type' => 'pln']) }}" class="tab-btn {{ $type === 'pln' ? 'active' : '' }}"><i class="fa-solid fa-bolt"></i> Token PLN</a>
+        <a href="{{ route('home', ['type' => 'voucher']) }}" class="tab-btn {{ $type === 'voucher' ? 'active' : '' }}"><i class="fa-solid fa-ticket"></i> Voucher & TV</a>
     </div>
 
     <!-- Games Grid -->
@@ -475,6 +477,11 @@
                             'pubg-mobile' => 'fa-crosshairs',
                             'genshin-impact' => 'fa-wand-magic-sparkles',
                             'valorant' => 'fa-shield-halved',
+                            'pln' => 'fa-bolt',
+                            'dana', 'ovo', 'go-pay', 'shopee-pay', 'linkaja' => 'fa-wallet',
+                            'telkomsel', 'xl', 'axis', 'tri', 'indosat', 'smartfren', 'byu' => 'fa-tower-cell',
+                            'k-vision-dan-gol' => 'fa-tv',
+                            'pertamina-gas' => 'fa-fire',
                             default => 'fa-gamepad'
                         };
                     @endphp

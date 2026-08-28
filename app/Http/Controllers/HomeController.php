@@ -12,9 +12,9 @@ class HomeController extends Controller
      */
     public function index(Request $request)
     {
-        $type = $request->query('type', 'games');
+        $type = $request->query('type', 'all');
 
-        $categoriesQuery = Category::active()->withCount('products');
+        $categoriesQuery = Category::active()->has('products')->withCount('products');
 
         if ($type !== 'all') {
             $categoriesQuery->where('type', $type);

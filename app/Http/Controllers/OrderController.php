@@ -27,7 +27,7 @@ class OrderController extends Controller
     /**
      * Submit Pesanan & Dapatkan Snap Token Midtrans
      */
-    public function store(Request $request, OrderService $orderService)
+    public function store(Request $request, OrderService $orderService, \App\Services\AccountValidatorService $validator)
     {
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
@@ -38,9 +38,16 @@ class OrderController extends Controller
             'customer_email' => 'nullable|email|max:100',
         ], [
             'product_id.required' => 'Silakan pilih nominal produk top-up.',
-            'customer_number.required' => 'ID Akun game wajib diisi.',
+            'customer_number.required' => 'ID Akun game / Nomor Tujuan wajib diisi.',
             'customer_phone.required' => 'Nomor WhatsApp wajib diisi untuk notifikasi.',
         ]);
+
+        $product = \App\Models\Product::with('category')->findOrFail($validated['product_id']);
+        $check = $validator->validate($product->category->slug, $validated['customer_number'], $validated['zone_id'] ?? null);
+
+        if (!$check['success']) {
+            return back()->withErrors(['customer_number' => $check['message']])->withInput();
+        }
 
         $order = $orderService->createOrder($validated);
 
