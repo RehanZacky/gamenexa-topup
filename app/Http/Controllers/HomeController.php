@@ -14,13 +14,19 @@ class HomeController extends Controller
     {
         $type = $request->query('type', 'all');
 
-        $categoriesQuery = Category::active()->has('products')->withCount('products');
+        $categoriesQuery = Category::active()
+            ->whereHas('products', function ($q) {
+                $q->where('status', 'active');
+            })
+            ->withCount(['products' => function ($q) {
+                $q->where('status', 'active');
+            }]);
 
         if ($type !== 'all') {
             $categoriesQuery->where('type', $type);
         }
 
-        $categories = $categoriesQuery->get();
+        $categories = $categoriesQuery->orderBy('name', 'asc')->get();
 
         return view('pages.home', compact('categories', 'type'));
     }

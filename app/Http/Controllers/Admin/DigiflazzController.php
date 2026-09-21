@@ -1,51 +1,75 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Provider;
 use App\Services\DigiflazzService;
-use Illuminate\Console\Command;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 
-class SyncDigiflazzProducts extends Command
+class DigiflazzController extends Controller
 {
     /**
-     * The name and signature of the console command.
-     *
-     * @var string
+     * Tampilkan Halaman Integrasi Digiflazz
      */
-    protected $signature = 'digiflazz:sync-products {--category= : Filter by brand / category name} {--margin=2000 : Default profit margin for new products in Rupiah} {--recalculate : Recalculate selling price with margin even for existing products} {--wipe : Reset all existing products and sync cleanly}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Sinkronisasi daftar produk dan harga langsung dari API Digiflazz';
-
-    /**
-     * Execute the console command.
-     */
-    public function handle(DigiflazzService $digiflazz)
+    public function index(DigiflazzService $digiflazz): View
     {
-        $this->info('Mengambil data produk dari Digiflazz API...');
+        $balanceData = $digiflazz->checkBalance();
+        $balance = $balanceData['data']['deposit'] ?? 0;
+        $balanceRc = $balanceData['data']['rc'] ?? null;
+        $balanceMsg = $balanceData['data']['message'] ?? 'Connected';
 
-        if ($this->option('wipe')) {
-            $this->warn('Menghapus data produk lama sebelum sinkronisasi...');
-            \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
-            Product::truncate();
-            \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
-        }
+        $totalProducts = Product::whereHas('provider', function ($q) {
+            $q->where('code', 'digiflazz');
+        })->count();
+
+        $activeProducts = Product::whereHas('provider', function ($q) {
+            $q->where('code', 'digiflazz');
+        })->where('status', 'active')->count();
+
+        $lastSync = Product::whereHas('provider', function ($q) {
+            $q->where('code', 'digiflazz');
+        })->latest('updated_at')->first()?->updated_at;
+
+        $categories = Category::orderBy('name', 'asc')->get();
+
+        return view('admin.digiflazz.index', compact(
+            'balance',
+            'balanceRc',
+            'balanceMsg',
+            'totalProducts',
+            'activeProducts',
+            'lastSync',
+            'categories'
+        ));
+    }
+
+    /**
+     * Jalankan Sinkronisasi Produk & Harga Digiflazz
+     */
+    public function sync(Request $request, DigiflazzService $digiflazz): RedirectResponse
+    {
+        $validated = $request->validate([
+            'category_filter' => 'nullable|string',
+            'default_margin' => 'required|numeric|min:0',
+            'update_selling_price' => 'nullable|boolean',
+        ]);
+
+        $margin = (float)$validated['default_margin'];
+        $filterCategory = $validated['category_filter'] ?? null;
+        $shouldUpdateSellingPrice = $request->boolean('update_selling_price');
 
         $response = $digiflazz->getPriceList();
         $items = $response['data'] ?? [];
 
         if (empty($items) || isset($items['rc'])) {
-            $msg = $items['message'] ?? 'Tidak ada data produk yang diterima dari Digiflazz.';
-            $this->error("Gagal mengambil produk: {$msg}");
-            return 1;
+            $errMsg = $items['message'] ?? 'Gagal menghubungi API Digiflazz. Periksa username dan key di pengaturan environment.';
+            return back()->with('error', "Gagal Sync Digiflazz: {$errMsg}");
         }
 
         $provider = Provider::firstOrCreate(
@@ -53,10 +77,9 @@ class SyncDigiflazzProducts extends Command
             ['name' => 'Digiflazz H2H Top-Up', 'type' => 'h2h_api', 'status' => 'active']
         );
 
-        $filterCategory = $this->option('category');
-        $margin = (float)$this->option('margin');
-        $recalculate = $this->option('recalculate');
         $syncedCount = 0;
+        $newCount = 0;
+        $updatedCount = 0;
 
         foreach ($items as $item) {
             if (!is_array($item) || empty($item['buyer_sku_code'])) {
@@ -71,7 +94,7 @@ class SyncDigiflazzProducts extends Command
                 continue;
             }
 
-            // Tentukan type dan label kategori
+            // Tentukan type dan label kategori jika baru dibuat
             $type = 'games';
             $userIdLabel = 'User ID';
             $zoneIdLabel = 'Zone ID';
@@ -96,7 +119,6 @@ class SyncDigiflazzProducts extends Command
                 $instruction = 'Masukkan nomor HP atau ID pelanggan untuk menerima kode/paket voucher.';
             }
 
-            // Kategori
             $category = Category::firstOrCreate(
                 ['slug' => $slug],
                 [
@@ -114,27 +136,30 @@ class SyncDigiflazzProducts extends Command
             $modalPrice = (float)($item['price'] ?? 0);
             $isBuyerProductStatus = ($item['buyer_product_status'] ?? true) && ($item['seller_product_status'] ?? true);
 
-            $existing = Product::where('category_id', $category->id)
+            $existingProduct = Product::where('category_id', $category->id)
                 ->where('provider_product_code', $item['buyer_sku_code'])
                 ->first();
 
-            if ($existing) {
+            if ($existingProduct) {
                 $updateData = [
                     'provider_id' => $provider->id,
                     'name' => $item['product_name'] ?? $item['buyer_sku_code'],
                     'modal_price' => $modalPrice,
-                    'description' => $item['desc'] ?? $existing->description,
+                    'description' => $item['desc'] ?? $existingProduct->description,
                 ];
 
-                if ($recalculate) {
+                // Hanya ubah harga jual jika admin mencentang opsi penyesuaian harga jual
+                if ($shouldUpdateSellingPrice) {
                     $updateData['selling_price'] = $modalPrice + $margin;
                 }
 
-                if (!$isBuyerProductStatus && $existing->status === 'active') {
+                // Jika status dari provider cut_off/gangguan
+                if (!$isBuyerProductStatus && $existingProduct->status === 'active') {
                     $updateData['status'] = 'inactive';
                 }
 
-                $existing->update($updateData);
+                $existingProduct->update($updateData);
+                $updatedCount++;
             } else {
                 Product::create([
                     'category_id' => $category->id,
@@ -147,12 +172,15 @@ class SyncDigiflazzProducts extends Command
                     'selling_price' => $modalPrice + $margin,
                     'status' => $isBuyerProductStatus ? 'active' : 'inactive',
                 ]);
+                $newCount++;
             }
 
             $syncedCount++;
         }
 
-        $this->info("Berhasil melakukan sinkronisasi {$syncedCount} produk Digiflazz!");
-        return 0;
+        return redirect()->route('admin.digiflazz.index')->with(
+            'success',
+            "Sinkronisasi berhasil! Total {$syncedCount} produk diproses ({$newCount} produk baru ditambahkan, {$updatedCount} harga modal produk diperbarui)."
+        );
     }
 }
