@@ -1,0 +1,24 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # 1. Izinkan SSL Verification (Let's Encrypt / cPanel AutoSSL HTTP-01 Challenge)
+    RewriteRule ^\.well-known/ - [L]
+
+    # 2. Blokir akses ke file sensitif dan file tersembunyi (.env, .git, dll)
+    RewriteRule ^\.(?!well-known).* - [F,L,NC]
+    RewriteRule ^(composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|vite\.config\.js|artisan|\.editorconfig) - [F,L,NC]
+
+    # 3. Blokir akses langsung ke folder internal Laravel
+    RewriteRule ^(app|bootstrap|config|database|resources|routes|tests|vendor)(/|$) - [F,L,NC]
+
+    # 4. Blokir akses langsung ke folder internal storage (storage/app, storage/framework, storage/logs)
+    RewriteRule ^storage/(app|framework|logs)(/|$) - [F,L,NC]
+
+    # 5. Arahkan semua request ke folder public/ secara transparan
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
