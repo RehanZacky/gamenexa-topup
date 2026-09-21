@@ -69,3 +69,49 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
     Route::get('payments', [AdminPaymentController::class, 'index'])->name('payments.index');
     Route::get('topup-transactions', [AdminTopupTransactionController::class, 'index'])->name('topup_transactions.index');
 });
+
+/*
+|--------------------------------------------------------------------------
+| cPanel Setup Helper (Untuk Server Tanpa Akses SSH/Terminal)
+| Akses: https://domainanda.com/cpanel-setup?key=gamenexa2026
+|--------------------------------------------------------------------------
+*/
+Route::get('/cpanel-setup', function (\Illuminate\Http\Request $request) {
+    $secret = env('CPANEL_SETUP_KEY', 'gamenexa2026');
+    if ($request->query('key') !== $secret) {
+        abort(403, 'Akses Ditolak: Kunci keamanan salah.');
+    }
+
+    $results = [];
+
+    // 1. Storage link
+    try {
+        \Illuminate\Support\Facades\Artisan::call('storage:link');
+        $results['storage:link'] = trim(\Illuminate\Support\Facades\Artisan::output());
+    } catch (\Throwable $e) {
+        $results['storage:link'] = $e->getMessage();
+    }
+
+    // 2. Migrate database
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $results['migrate'] = trim(\Illuminate\Support\Facades\Artisan::output());
+    } catch (\Throwable $e) {
+        $results['migrate'] = $e->getMessage();
+    }
+
+    // 3. Clear cache
+    try {
+        \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+        $results['optimize:clear'] = trim(\Illuminate\Support\Facades\Artisan::output());
+    } catch (\Throwable $e) {
+        $results['optimize:clear'] = $e->getMessage();
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Setup cPanel berhasil dijalankan!',
+        'details' => $results,
+    ]);
+});
+

@@ -90,32 +90,45 @@ Anda bisa menggunakan salah satu dari dua cara berikut:
 
 ---
 
-## ⚡ Langkah 3: Jalankan Script Otomatisasi (1 Perintah Selesai)
+## ⚡ Langkah 3: Menjalankan Setup & Migration
 
+Pilih cara yang sesuai dengan kondisi hosting Anda:
+
+### 👉 Pilihan 1: Jika Ada Akses Terminal
 Di Terminal cPanel, cukup jalankan:
 ```bash
 bash cpanel-deploy.sh
 ```
 
-Script ini akan otomatis menjalankan:
-1. `composer install --no-dev --optimize-autoloader`
-2. `php artisan migrate --force`
-3. `php artisan storage:link`
-4. `php artisan optimize:clear`
-5. `php artisan config:cache && php artisan route:cache && php artisan view:cache`
-6. `chmod -R 775 storage bootstrap/cache`
+---
+
+### 👉 Pilihan 2: Jika TIDAK Ada Akses Terminal (Shared Hosting)
+1. **Upload Folder `vendor`:**
+   Karena hosting tanpa terminal tidak bisa menjalankan `composer install`, kompres folder `vendor` di laptop Anda menjadi `vendor.zip`, upload ke `public_html` via **File Manager cPanel**, lalu klik kanan > **Extract**.
+2. **Jalankan Setup via Browser:**
+   Buka browser Anda dan akses URL berikut:
+   ```text
+   https://domainanda.com/cpanel-setup?key=gamenexa2026
+   ```
+   *(Sistem akan otomatis menjalankan `storage:link`, `migrate --force`, dan `optimize:clear` langsung dari browser dengan respon status JSON!)*
+3. **Alternatif via Cron Jobs:**
+   Buka cPanel > menu **Cron Jobs** > Tambahkan cron job sekali jalan:
+   ```text
+   cd /home/username/public_html && php artisan migrate --force && php artisan storage:link && php artisan optimize:clear
+   ```
 
 ---
 
 ## 🔄 Cara Update di Kemudian Hari (Jika Ada Perubahan Kode)
 
-Kapan pun Anda melakukan update di lokal dan push ke GitHub, di server cPanel Anda cukup membuka **Terminal** dan menjalankan:
-
-```bash
-cd ~/public_html
-git pull origin main
-bash cpanel-deploy.sh
-```
+* **Jika ada Terminal:**
+  ```bash
+  cd ~/public_html
+  git pull origin main
+  bash cpanel-deploy.sh
+  ```
+* **Jika tanpa Terminal:**
+  Buka cPanel > menu **Git™ Version Control** > klik **Manage** di repository Anda > klik tab **Pull or Deploy** > klik tombol **Update from Remote**. Setelah itu buka `https://domainanda.com/cpanel-setup?key=gamenexa2026` di browser.
 
 Website akan langsung ter-update dengan aman!
 
