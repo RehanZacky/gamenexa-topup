@@ -108,9 +108,24 @@ Route::get('/cpanel-setup', function (\Illuminate\Http\Request $request) {
         $results['optimize:clear'] = $e->getMessage();
     }
 
+    // 4. Deteksi Outbound IP Server (Untuk Whitelist Digiflazz)
+    $serverIp = null;
+    try {
+        $serverIp = trim(@file_get_contents('https://api.ipify.org', false, stream_context_create([
+            'http' => ['timeout' => 3]
+        ])));
+    } catch (\Throwable $e) {
+        $serverIp = null;
+    }
+
+    if (!$serverIp) {
+        $serverIp = $_SERVER['SERVER_ADDR'] ?? 'Gagal mendeteksi otomatis (cek di sidebar cPanel)';
+    }
+
     return response()->json([
         'status' => 'success',
         'message' => 'Setup cPanel berhasil dijalankan!',
+        'server_ip_for_digiflazz_whitelist' => $serverIp,
         'details' => $results,
     ]);
 });
