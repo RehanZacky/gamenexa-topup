@@ -6,7 +6,7 @@ Semua file konfigurasi (`.htaccess` root, fallback `index.php`, dan script otoma
 
 ---
 
-## 🛠️ Persiapan Awal di cPanel
+## 🛠️ Persiapan Awal di cPanel1
 
 ### 1. Set Versi PHP
 * Buka cPanel > **Select PHP Version** atau **MultiPHP Manager**.
