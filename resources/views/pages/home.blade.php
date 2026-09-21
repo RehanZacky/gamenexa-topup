@@ -268,6 +268,20 @@
         transition: all 0.3s ease;
     }
 
+    .game-thumb-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 24px;
+        transition: all 0.3s ease;
+        filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+    }
+
+    .game-card:hover .game-thumb-img {
+        transform: scale(1.08);
+        filter: drop-shadow(0 0 16px rgba(168, 85, 247, 0.5));
+    }
+
     .game-card:hover .game-thumb-icon {
         transform: scale(1.15);
         color: var(--primary-light);
@@ -470,22 +484,26 @@
                         <i class="fa-solid fa-bolt"></i> INSTAN
                     </div>
                     
-                    @php
-                        $iconClass = match(strtolower($category->slug)) {
-                            'mobile-legends' => 'fa-dragon',
-                            'free-fire' => 'fa-fire-flame-curved',
-                            'pubg-mobile' => 'fa-crosshairs',
-                            'genshin-impact' => 'fa-wand-magic-sparkles',
-                            'valorant' => 'fa-shield-halved',
-                            'pln' => 'fa-bolt',
-                            'dana', 'ovo', 'go-pay', 'shopee-pay', 'linkaja' => 'fa-wallet',
-                            'telkomsel', 'xl', 'axis', 'tri', 'indosat', 'smartfren', 'byu' => 'fa-tower-cell',
-                            'k-vision-dan-gol' => 'fa-tv',
-                            'pertamina-gas' => 'fa-fire',
-                            default => 'fa-gamepad'
-                        };
-                    @endphp
-                    <i class="fa-solid {{ $iconClass }} game-thumb-icon"></i>
+                    @if($category->image)
+                        <img src="{{ asset($category->image) }}" alt="{{ $category->name }}" class="game-thumb-img" loading="lazy">
+                    @else
+                        @php
+                            $iconClass = match(strtolower($category->slug)) {
+                                'mobile-legends' => 'fa-dragon',
+                                'free-fire' => 'fa-fire-flame-curved',
+                                'pubg-mobile' => 'fa-crosshairs',
+                                'genshin-impact' => 'fa-wand-magic-sparkles',
+                                'valorant' => 'fa-shield-halved',
+                                'pln' => 'fa-bolt',
+                                'dana', 'ovo', 'go-pay', 'shopee-pay', 'linkaja' => 'fa-wallet',
+                                'telkomsel', 'xl', 'axis', 'tri', 'indosat', 'smartfren', 'byu' => 'fa-tower-cell',
+                                'k-vision-dan-gol' => 'fa-tv',
+                                'pertamina-gas' => 'fa-fire',
+                                default => 'fa-gamepad'
+                            };
+                        @endphp
+                        <i class="fa-solid {{ $iconClass }} game-thumb-icon"></i>
+                    @endif
                 </div>
 
                 <div class="game-info">

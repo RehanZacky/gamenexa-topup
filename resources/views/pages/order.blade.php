@@ -44,6 +44,14 @@
         font-size: 30px;
         border: 1.5px solid rgba(168, 85, 247, 0.4);
         box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+        overflow: hidden;
+    }
+
+    .game-sidebar-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 6px;
     }
 
     .game-sidebar-title {
@@ -348,7 +356,11 @@
         <aside class="game-sidebar">
             <div class="game-sidebar-header">
                 <div class="game-sidebar-avatar">
-                    <i class="fa-solid fa-gamepad"></i>
+                    @if($category->image)
+                        <img src="{{ asset($category->image) }}" alt="{{ $category->name }}">
+                    @else
+                        <i class="fa-solid fa-gamepad"></i>
+                    @endif
                 </div>
                 <div>
                     <h1 class="game-sidebar-title">{{ $category->name }}</h1>
