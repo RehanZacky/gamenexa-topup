@@ -34,10 +34,19 @@ use Illuminate\Support\Facades\Artisan;
 
 $results = [];
 
-// 1. Hubungkan Storage Symlink
+// 1. Hubungkan Storage Symlink (Native PHP tanpa exec)
 try {
-    Artisan::call('storage:link');
-    $results['storage_link'] = trim(Artisan::output());
+    $target = __DIR__.'/../storage/app/public';
+    $link = __DIR__.'/storage';
+    if (!file_exists($link)) {
+        if (@symlink($target, $link)) {
+            $results['storage_link'] = 'Symlink storage berhasil dibuat!';
+        } else {
+            $results['storage_link'] = 'Symlink dilewati (fitur symlink dimatikan oleh hosting).';
+        }
+    } else {
+        $results['storage_link'] = 'Folder public/storage sudah terhubung.';
+    }
 } catch (\Throwable $e) {
     $results['storage_link'] = 'Notice: ' . $e->getMessage();
 }
