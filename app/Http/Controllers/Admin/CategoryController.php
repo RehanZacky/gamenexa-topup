@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -110,6 +111,7 @@ class CategoryController extends Controller
             'slug' => 'required|string|max:120|unique:categories,slug,' . $category->id,
             'type' => 'required|in:games,pulsa,ewallet,pln,voucher',
             'publisher' => 'nullable|string|max:100',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'instruction' => 'nullable|string',
             'has_zone_id' => 'nullable|boolean',
             'zone_id_label' => 'nullable|string|max:50',
@@ -125,6 +127,20 @@ class CategoryController extends Controller
 
         $validated['slug'] = Str::slug($validated['slug']);
         $validated['has_zone_id'] = $request->boolean('has_zone_id');
+
+        unset($validated['image']);
+        if ($request->hasFile('image')) {
+            $directory = public_path('images/categories');
+            File::ensureDirectoryExists($directory);
+
+            if ($category->image && Str::startsWith($category->image, 'images/categories/')) {
+                File::delete(public_path($category->image));
+            }
+
+            $filename = $request->file('image')->hashName();
+            $request->file('image')->move($directory, $filename);
+            $validated['image'] = 'images/categories/' . $filename;
+        }
 
         $category->update($validated);
 

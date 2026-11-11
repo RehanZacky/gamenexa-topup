@@ -15,7 +15,7 @@
             </a>
         </div>
 
-        <form action="{{ route('admin.categories.update', $category) }}" method="POST" class="space-y-6">
+        <form action="{{ route('admin.categories.update', $category) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
             @csrf
             @method('PUT')
 
@@ -66,6 +66,22 @@
                     <label for="zone_id_label" class="block text-xs font-bold uppercase tracking-wider text-zinc-300 mb-2">Label Input Server / Zone</label>
                     <input type="text" name="zone_id_label" id="zone_id_label" value="{{ old('zone_id_label', $category->zone_id_label) }}"
                            class="w-full bg-dark-900/90 border border-purple-900/40 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                </div>
+            </div>
+
+            <!-- Category Image -->
+            <div>
+                <label for="image" class="block text-xs font-bold uppercase tracking-wider text-zinc-300 mb-2">Gambar Kategori</label>
+                <div class="flex flex-col sm:flex-row items-start gap-4">
+                    @if($category->image)
+                        <img src="{{ asset($category->image) }}" alt="{{ $category->name }}" class="w-24 h-24 rounded-xl object-cover border border-purple-900/40">
+                    @endif
+                    <div class="flex-1 w-full">
+                        <input type="file" name="image" id="image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                               class="w-full bg-dark-900/90 border border-purple-900/40 rounded-xl px-4 py-3 text-sm text-white file:mr-4 file:rounded-lg file:border-0 file:bg-purple-600 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white">
+                        <p class="mt-1 text-[11px] text-zinc-500">Format JPG, PNG, atau WEBP. Maksimal 2 MB. Kosongkan jika tidak ingin mengganti.</p>
+                        @error('image') <p class="mt-1 text-xs text-red-400">{{ $message }}</p> @enderror
+                    </div>
                 </div>
             </div>
 
