@@ -144,3 +144,13 @@ Website akan langsung ter-update dengan aman!
    * **Digiflazz:** `https://domainanda.com/webhook/digiflazz`
 3. **Pastikan SSL (HTTPS) Aktif:**
    * Buka menu **SSL/TLS Status** di cPanel > klik **Run AutoSSL** agar domain memiliki sertifikat SSL valid.
+
+### Helper APIGames tanpa akses terminal
+
+Jika hosting tidak menyediakan Terminal:
+
+1. Upload `public/apigames-check.php` melalui cPanel File Manager ke document root.
+2. Buka `https://domainanda.com/apigames-check.php?key=gamenexa-apigames-2026-9f4c`.
+3. Tambahkan nilai `outbound_ip` ke whitelist IP APIGames.
+4. Pastikan respons API tidak berisi `IP not allowed` atau `Invalid signature`.
+5. Hapus `apigames-check.php` segera setelah selesai.
