@@ -189,7 +189,6 @@ class AccountValidatorService
 
         $signature = md5($merchantId . $secretKey);
         $fullUserId = $userId . ($zoneId ?? '');
-
         $queryParams = [
             'user_id' => $fullUserId,
             'signature' => $signature,
