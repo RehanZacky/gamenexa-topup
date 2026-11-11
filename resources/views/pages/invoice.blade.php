@@ -258,24 +258,20 @@
                         </h3>
                     </div>
                     <div style="font-size: 13px; color: var(--text-dim); text-align: right;">
-                        Metode: Midtrans (QRIS / VA)
+                        Metode: Doit.id (QRIS / VA)
                     </div>
                 </div>
 
-                <!-- Midtrans Payment Action -->
+                <!-- Doit.id Payment Action -->
                 @if($order->status === 'unpaid')
-                    @if(!empty($payment->snap_token))
-                        <button type="button" class="btn-pay-now" id="payButton" onclick="payWithSnap('{{ $payment->snap_token }}')">
-                            <i class="fa-solid fa-credit-card"></i> Bayar Sekarang via Midtrans
-                        </button>
-                    @elseif(!empty($payment->checkout_url))
+                    @if(!empty($payment->checkout_url))
                         <a href="{{ $payment->checkout_url }}" target="_blank" class="btn-pay-now">
                             <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Halaman Pembayaran
                         </a>
                     @else
                         <div style="background: rgba(255, 158, 0, 0.1); border: 1px solid rgba(255, 158, 0, 0.3); padding: 20px; border-radius: var(--radius-md); text-align: center;">
-                            <p style="color: #ff9e00; font-weight: 700; margin-bottom: 6px;">Menunggu Konfigurasi API Midtrans</p>
-                            <p style="font-size: 13px; color: var(--text-muted);">Silakan masukkan <code>MIDTRANS_SERVER_KEY</code> dan <code>MIDTRANS_CLIENT_KEY</code> di file <code>.env</code> untuk mengaktifkan pembayaran langsung.</p>
+                            <p style="color: #ff9e00; font-weight: 700; margin-bottom: 6px;">Menunggu Konfigurasi API Doit.id</p>
+                            <p style="font-size: 13px; color: var(--text-muted);">Silakan masukkan <code>DUITKU_API_KEY</code> dan <code>DUITKU_SIGNING_SECRET</code> di file <code>.env</code> untuk mengaktifkan pembayaran langsung.</p>
                         </div>
                     @endif
                 @endif
@@ -307,29 +303,28 @@
 @endsection
 
 @section('scripts')
-@if($order->status === 'unpaid' && !empty($payment->snap_token))
+@if($order->status === 'unpaid')
 <script>
-    function payWithSnap(snapToken) {
-        if (typeof snap !== 'undefined') {
-            snap.pay(snapToken, {
-                onSuccess: function(result) {
-                    window.location.reload();
-                },
-                onPending: function(result) {
-                    window.location.reload();
-                },
-                onError: function(result) {
-                    alert('Pembayaran gagal, silakan coba lagi.');
-                    window.location.reload();
-                },
-                onClose: function() {
-                    console.log('Customer menutup popup Midtrans');
-                }
+    const paymentStatusUrl = @json(route('payments.status', ['order_number' => $order->order_number]));
+
+    window.setInterval(async function () {
+        try {
+            const response = await fetch(paymentStatusUrl, {
+                headers: { 'Accept': 'application/json' }
             });
-        } else {
-            alert('Midtrans Snap SDK belum dimuat. Pastikan client key di .env sudah benar.');
+
+            if (!response.ok) {
+                return;
+            }
+
+            const status = await response.json();
+            if (status.order_status !== 'unpaid') {
+                window.location.reload();
+            }
+        } catch (error) {
+            console.warn('Gagal memperbarui status pembayaran.', error);
         }
-    }
+    }, 5000);
 </script>
 @endif
 @endsection

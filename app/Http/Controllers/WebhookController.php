@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\DigiflazzService;
-use App\Services\MidtransService;
+use App\Services\DoitService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -11,21 +11,27 @@ use Illuminate\Support\Facades\Log;
 class WebhookController extends Controller
 {
     /**
-     * Endpoint Webhook Callback Midtrans
-     * POST /webhook/midtrans
+     * Endpoint Webhook Callback Doit.id
+     * POST /webhook/duitku
      */
-    public function midtrans(Request $request, MidtransService $midtrans): JsonResponse
+    public function doit(Request $request, DoitService $doit): JsonResponse
     {
         $payload = $request->all();
-        Log::info('Received Midtrans Webhook Notification', ['payload' => $payload]);
-
-        $payment = $midtrans->handleNotification($payload);
-
-        if (!$payment) {
-            return response()->json(['status' => 'error', 'message' => 'Payment not found or invalid signature'], 400);
+        if (!$doit->verifySignature($request->getContent(), $request->header('PayBridge-Signature'))) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid signature'], 401);
         }
 
-        return response()->json(['status' => 'success', 'message' => 'Payment notification processed']);
+        if (!in_array($payload['type'] ?? null, ['payment.paid', 'payment.expired'], true)) {
+            return response()->json(['status' => 'ignored']);
+        }
+
+        $payment = $doit->handleWebhook($payload);
+
+        if (!$payment) {
+            return response()->json(['status' => 'error', 'message' => 'Payment not found'], 404);
+        }
+
+        return response()->json(['status' => 'success']);
     }
 
     /**

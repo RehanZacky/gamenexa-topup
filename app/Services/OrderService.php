@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 class OrderService
 {
     /**
-     * Buat Order Baru dan Inisiasi Pembayaran Midtrans
+     * Buat Order Baru dan inisiasi pembayaran Doit.id
      */
     public function createOrder(array $data): Order
     {
@@ -58,8 +58,8 @@ class OrderService
                 'target_data' => $targetData,
             ]);
 
-            // Inisiasi Pembayaran Midtrans Snap
-            app(MidtransService::class)->createSnapTransaction($order);
+            // Inisiasi pembayaran Doit.id
+            app(DoitService::class)->createPayment($order);
 
             return $order->load(['items.product.category', 'payments']);
         });

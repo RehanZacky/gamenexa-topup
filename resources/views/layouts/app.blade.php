@@ -16,13 +16,6 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Midtrans Snap JS -->
-    @if(config('midtrans.client_key'))
-    <script type="text/javascript"
-        src="{{ config('midtrans.snap_url') }}"
-        data-client-key="{{ config('midtrans.client_key') }}"></script>
-    @endif
-
     <style>
         :root {
             /* Palette Terinspirasi dari Logo GameNexa */
@@ -407,7 +400,7 @@
                             <span class="brand-tagline">Aman &bull; Cepat &bull; Terpercaya</span>
                         </div>
                     </a>
-                    <p>GameNexa adalah platform top-up game dan voucher online terpercaya di Indonesia. Transaksi otomatis 24 jam dengan integrasi resmi Digiflazz dan sistem pembayaran aman Midtrans.</p>
+                    <p>GameNexa adalah platform top-up game dan voucher online terpercaya di Indonesia. Transaksi otomatis 24 jam dengan integrasi resmi Digiflazz dan sistem pembayaran aman Doit.id.</p>
                 </div>
 
                 <div>
@@ -422,10 +415,10 @@
                 <div>
                     <h4 class="footer-heading">Bantuan & CS</h4>
                     <ul class="footer-links">
-                        <li><a href="#"><i class="fa-brands fa-whatsapp" style="color: var(--primary);"></i> WhatsApp Support (24/7)</a></li>
-                        <li><a href="#"><i class="fa-regular fa-envelope" style="color: var(--primary);"></i> support@gamenexa.com</a></li>
-                        <li><a href="#">Syarat & Ketentuan Layanan</a></li>
-                        <li><a href="#">Kebijakan Privasi</a></li>
+                        <li><a href="https://wa.link/5h4u8y"><i class="fa-brands fa-whatsapp" style="color: var(--primary);"></i> WhatsApp Support (24/7)</a></li>
+                        <li><a href="mailto:nexadigitalinteractive@gmail.com"><i class="fa-regular fa-envelope" style="color: var(--primary);"></i> support@gamenexa.com</a></li>
+                        <li><a href="{{ route('terms') }}">Syarat & Ketentuan Layanan</a></li>
+                        <li><a href="{{ route('privacy') }}">Kebijakan Privasi</a></li>
                     </ul>
                 </div>
             </div>

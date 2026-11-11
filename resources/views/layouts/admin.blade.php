@@ -149,7 +149,7 @@
 
             <a href="{{ route('admin.payments.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all {{ request()->routeIs('admin.payments.*') ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-600/30 font-bold' : 'text-zinc-400 hover:text-white hover:bg-dark-700/80' }}">
                 <i class="fa-solid fa-credit-card w-5 text-center text-base {{ request()->routeIs('admin.payments.*') ? 'text-white' : 'text-purple-400' }}"></i>
-                <span>Pembayaran Midtrans</span>
+                <span>Pembayaran Doit.id</span>
             </a>
 
             <a href="{{ route('admin.topup_transactions.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all {{ request()->routeIs('admin.topup_transactions.*') ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-600/30 font-bold' : 'text-zinc-400 hover:text-white hover:bg-dark-700/80' }}">

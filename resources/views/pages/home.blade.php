@@ -552,7 +552,7 @@
             </div>
             <div>
                 <h4 class="feature-title">Metode Pembayaran Terlengkap</h4>
-                <p class="feature-desc">Pembayaran mudah dengan QRIS semua bank/e-wallet, GoPay, OVO, DANA, ShopeePay, dan Virtual Account terintegrasi Midtrans.</p>
+                <p class="feature-desc">Pembayaran mudah dengan QRIS dan Virtual Account terintegrasi Doit.id.</p>
             </div>
         </div>
     </div>

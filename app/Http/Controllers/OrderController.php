@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Order;
+use App\Services\DoitService;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class OrderController extends Controller
 {
@@ -25,7 +27,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Submit Pesanan & Dapatkan Snap Token Midtrans
+     * Submit Pesanan & Dapatkan hosted payment URL Doit.id
      */
     public function store(Request $request, OrderService $orderService, \App\Services\AccountValidatorService $validator)
     {
@@ -67,6 +69,36 @@ class OrderController extends Controller
         $payment = $order->latestPayment;
 
         return view('pages.invoice', compact('order', 'payment'));
+    }
+
+    /**
+     * Status pembayaran untuk polling halaman invoice.
+     */
+    public function paymentStatus(string $orderNumber, DoitService $doit): JsonResponse
+    {
+        $order = Order::where('order_number', $orderNumber)
+            ->with('latestPayment')
+            ->firstOrFail();
+
+        $payment = $order->latestPayment;
+        $providerStatus = null;
+
+        if ($payment?->provider === 'doit' && $payment->transaction_id) {
+            $providerStatus = $doit->getPayment($payment);
+        }
+
+        return response()->json([
+            'order_number' => $order->order_number,
+            'order_status' => $order->status,
+            'provider_status' => $providerStatus['status'] ?? null,
+            'payment' => $payment ? [
+                'transaction_id' => $payment->transaction_id,
+                'status' => $payment->transaction_status,
+                'fraud_status' => $payment->fraud_status,
+                'paid_at' => $payment->paid_at?->toISOString(),
+                'expired_at' => $payment->expired_at?->toISOString(),
+            ] : null,
+        ]);
     }
 
     /**

@@ -10,7 +10,7 @@ use Illuminate\View\View;
 class PaymentController extends Controller
 {
     /**
-     * Tampilkan Riwayat Pembayaran Midtrans
+     * Tampilkan Riwayat Pembayaran Doit.id
      */
     public function index(Request $request): View
     {

@@ -23,13 +23,18 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/order/{slug}', [OrderController::class, 'show'])->name('order.show');
 Route::post('/order', [OrderController::class, 'store'])->name('order.store');
 Route::get('/invoice/{order_number}', [OrderController::class, 'invoice'])->name('order.invoice');
+Route::get('/api/payments/{order_number}/status', [OrderController::class, 'paymentStatus'])->name('payments.status');
 Route::get('/tracking', [OrderController::class, 'tracking'])->name('order.tracking');
+
+// Legal Pages
+Route::view('/terms', 'terms')->name('terms');
+Route::view('/privacy', 'privacy')->name('privacy');
 
 // AJAX Account & Phone Validation Check
 Route::post('/api/check-account', [AccountValidationController::class, 'check'])->name('account.check');
 
 // Webhook Handlers
-Route::post('/webhook/midtrans', [WebhookController::class, 'midtrans'])->name('webhook.midtrans');
+Route::post('/webhook/duitku', [WebhookController::class, 'doit'])->name('webhook.doit');
 Route::post('/webhook/digiflazz', [WebhookController::class, 'digiflazz'])->name('webhook.digiflazz');
 
 /*
@@ -129,4 +134,3 @@ Route::get('/cpanel-setup', function (\Illuminate\Http\Request $request) {
         'details' => $results,
     ]);
 });
-
